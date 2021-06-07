@@ -13,7 +13,7 @@ fi
 $VENV/bin/pip install -r requirements.txt
 
 $VENV/bin/python src/manage.py migrate
-$VENV/bin/python src/manage.py collectstatic
+#$VENV/bin/python src/manage.py collectstatic
 
 $VENV/bin/python src/manage.py runserver 0.0.0.0:8000
 
