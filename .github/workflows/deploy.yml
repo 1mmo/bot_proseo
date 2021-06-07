@@ -23,7 +23,7 @@ jobs:
         KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       with:
         source: "."
-        target: "/var/www/mywebsite"
+        target: "/opt/proseo"
 
     - name: Executing remote command
       uses: appleboy/ssh-action@master
