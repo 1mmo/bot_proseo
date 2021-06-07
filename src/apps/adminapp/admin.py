@@ -4,8 +4,8 @@ from .models import Users, Url, Chats
 
 @admin.register(Users)
 class UsersAdmin(admin.ModelAdmin):
-    list_display = ("chat_id", "username", "status", "subscribe", "black_list")
-    list_filter = ("chat_id", "username", "black_list")
+    list_display = ("__str__", "username", "status", "subscribe", "black_list")
+    list_filter = ("username", "black_list")
 
 
 @admin.register(Url)
