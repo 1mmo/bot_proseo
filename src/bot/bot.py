@@ -12,28 +12,27 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
 
-@dp.message_handler(commands=['start', 'help'])
-async def send_welcome(message: types.Message):
-    """
-    This handler will be called when user sends `/start` or `/help` command
-    """
-    await message.reply("Хватит быть додиком!")
-
-
-@dp.message_handler(regexp='(^cat[s]?$|puss)')
-async def cats(message: types.Message):
-    with open('data/cats.jpg', 'rb') as photo:
-        '''
-        # Old fashioned way:
-        await bot.send_photo(
-            message.chat.id,
-            photo,
-            caption='Cats are here 😺',
-            reply_to_message_id=message.message_id,
-        )
-        '''
-
-        await message.reply_photo(photo, caption='Cats are here 😺')
+@dp.message_handler(commands=['start'])
+async def send_welcome(message: types.Message, from_user=None):
+    button_urls = types.KeyboardButton(text='Каталог сайтов', call_data='urls')
+    button_chats = types.KeyboardButton(text='Каталог чатов', call_data='chats')
+    button_add_url = types.KeyboardButton(text='Добавить сайт', call_data='add_url')
+    button_add_chat = types.KeyboardButton(text='Добавить чат', call_data='add_chat')
+    button_black_list = types.KeyboardButton(text='Черный список', call_data='black_list')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.row(button_urls)
+    keyboard.insert(button_chats)
+    keyboard.row(button_add_url)
+    keyboard.insert(button_add_chat)
+    keyboard.row(button_black_list)
+    if from_user:
+        name = from_user.first_name
+    else:
+        name = message.from_user.first_name
+    reply = (
+        f'Привет, {name}! 👋\nПриветственное сообщение\n'
+        'О боте: /help (текст о боте)')
+    await message.answer(reply, reply_markup=keyboard)
 
 
 @dp.message_handler()
