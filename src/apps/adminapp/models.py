@@ -62,7 +62,7 @@ class Chats(models.Model):
     url = models.URLField()
     title = models.CharField(max_length=32, default="")
     black_list = models.BooleanField(default=False)
-    description = models.TextField(max_length=200,blank=True, null=True)
+    description = models.TextField(max_length=200, blank=True, null=True)
     category = models.ManyToManyField(Category, blank=True, verbose_name='Category',)
 
     def __str__(self):
