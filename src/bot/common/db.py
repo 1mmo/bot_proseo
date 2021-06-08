@@ -62,3 +62,75 @@ def unsubscribe(value):
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute(query, connection)
+
+
+def check_url(value):
+    query = """
+    SELECT COUNT(*)
+    FROM urls
+    WHERE url='{}';
+    """.format(value)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    if rows[0][0] == 0:
+        reply = 'Администратор рассмотрит вашу заявку'
+        result = True
+    else:
+        reply = 'Такой сайт уже существует в базе данных'
+        query = """
+        SELECT black_list
+        FROM urls
+        WHERE url='{}';
+        """.format(value)
+        cursor.execute(query, connection)
+        rows = cursor.fetchall()
+        if rows[0][0]:
+            reply += '\nНо этот сайт в черном списке'
+        result = False
+    return (reply, result)
+
+
+def check_chat(value):
+    query = """
+    SELECT COUNT(*)
+    FROM chats
+    WHERE url='{}';
+    """.format(value)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    if rows[0][0] == 0:
+        reply = 'Администратор рассмотрит вашу заявку'
+        result = True
+    else:
+        reply = 'Такой чат уже существует в базе данных'
+        query = """
+        SELECT black_list
+        FROM chats
+        WHERE url='{}'
+        """.format(value)
+        cursor.execute(query, connection)
+        rows = cursor.fetchall()
+        if rows[0][0]:
+            reply += '\nНо этот чат в черном списке'
+        result = False
+    return (reply, result)
+
+
+def admin_ids():
+    query = """
+    SELECT chat_id
+    FROM users
+    WHERE status='admin';
+    """
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    result = []
+    for i in range(len(rows)):
+        result.append(rows[i][0])
+    return result

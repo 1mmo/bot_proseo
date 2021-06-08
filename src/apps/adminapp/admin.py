@@ -10,12 +10,13 @@ class UsersAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('__str__',)
+    list_filter = ('title',)
 
 
 @admin.register(Url)
 class UrlAdmin(admin.ModelAdmin):
-    list_display = ("url", "title", "description",  "black_list")
+    list_display = ("url", "title", "description", 'get_category', "black_list")
     list_filter = ("url", "category", "black_list")
 
 
@@ -27,4 +28,5 @@ class ChatsAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('title', 'created_at')
+    list_filter = ('created_at',)

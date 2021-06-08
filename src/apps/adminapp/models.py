@@ -1,5 +1,3 @@
-import PIL
-
 from django.db import models
 from django.utils import timezone
 
@@ -47,15 +45,15 @@ class Url(models.Model):
     category = models.ManyToManyField(Category, blank=True, verbose_name='Category')
 
     def __str__(self):
-        return self.titl
+        return self.title
 
-    def get_categories(self):
+    def get_category(self):
         return "\n".join([p.title for p in self.category.all()])
 
     class Meta:
         db_table = 'urls'
-        verbose_name = 'Url'
-        verbose_name_plural = 'Urls'
+        verbose_name = 'Web-Site'
+        verbose_name_plural = 'Web-Sites'
 
 
 class Chats(models.Model):
