@@ -11,7 +11,12 @@ from common import db
 
 API_TOKEN = os.environ.get('BOT_TOKEN')
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    filename='bot.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S')
+
 
 storage = MemoryStorage()
 bot = Bot(token=API_TOKEN)
@@ -80,7 +85,7 @@ async def message_parse(message: types.Message):
         reply = 'Отправьте ссылку на чат (t.me/example)'
         await message.answer(reply)
         await Form.chat.set()
-    elif message.text == 'Каталок сайтов':
+    elif message.text == 'Каталог сайтов':
         pass
     elif message.text == 'Каталог чатов':
         pass
@@ -96,13 +101,28 @@ async def process_url(message: types.Message, state: FSMContext):
     """
     async with state.proxy() as ur_link:
         ur_link['url'] = message.text
-    reply, result = db.check_url(ur_link['url'])
-    if not result:
-        await state.finish()
+    if (('http://' in ur_link['url'] or 'https://' in ur_link['url']) and
+            't.me' not in ur_link['url']):
+        reply, result = db.check_url(ur_link['url'])
+        if not result:
+            await state.finish()
+            await message.answer(reply)
+        else:
+            await message.answer('Отправьте описание сайта')
+            await Form.description_url.set()
+    elif 't.me' in ur_link['url']:
+        reply = 'Это ссылка на чат'
+        reply += '\nНажмите на кнопку "Добавить чат"'
         await message.answer(reply)
+        await state.finish()
     else:
-        await message.answer('Отправьте описание сайта')
-        await Form.description_url.set()
+        reply = 'Это не ссылка на сайт\nНажмите на кнопку "Добавить сайт"\n'
+        if ' ' in ur_link['url']:
+            reply += 'Пришлите ссылку в формате http://example.com'
+        else:
+            reply += f'Пришлите ссылку в формате http://{ur_link["url"]}'
+        await message.answer(reply)
+        await state.finish()
 
 
 @dp.message_handler(state=Form.description_url)
@@ -132,13 +152,31 @@ async def process_chat(message: types.Message, state: FSMContext):
     """
     async with state.proxy() as chat_link:
         chat_link['url'] = message.text
-    reply, result = db.check_chat(chat_link['url'])
-    if not result:
+    if 't.me' in chat_link['url']:
+        if 'http' not in chat_link['url']:
+            chat_link['url'] = 'http://' + message.text
+        reply, result = db.check_chat(chat_link['url'])
+        if not result:
+            await state.finish()
+            await message.answer(reply)
+        else:
+            await message.answer('Отправьте описание чата')
+            await Form.description_chat.set()
+    elif 'http' in chat_link['url']:
         await state.finish()
+        reply = 'Это ссылка на сайт.\n'
+        reply += 'Чтобы добавить сайт, нажмите на кнопку "Добавить сайт"\n'
         await message.answer(reply)
     else:
-        await message.answer('Отправьте описание чата')
-        await Form.description_chat.set()
+        await state.finish()
+        reply = 'Это не ссылка\n'
+        reply += 'Нажмите на кнопку "Добавить чат"\n'
+        if ' ' in chat_link['url']:
+            reply += 'Пришлите ссылку на чат в формате t.me/example'
+        else:
+            reply += 'Пришлите ссылку на чат в формате '
+            reply += f't.me/{chat_link["url"]}'
+        await message.answer(reply)
 
 
 @dp.message_handler(state=Form.description_chat)
