@@ -6,7 +6,7 @@ import psycopg2
 
 logging.basicConfig(
     filename='bot.log',
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     datefmt='%d-%b-%y %H:%M:%S')
 
