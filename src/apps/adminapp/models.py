@@ -1,11 +1,11 @@
 from django.db import models
-from django.utils import timezone
 
 
 STATUS_CHOICES = (
     ('admin', 'Admin'),
     ('user', 'User'),
  )
+
 
 class Category(models.Model):
     title = models.CharField(max_length=255)
@@ -26,7 +26,10 @@ class Users(models.Model):
     surname = models.CharField(max_length=32, blank=True, null=True)
     black_list = models.BooleanField(default=False)
     subscribe = models.BooleanField(default=False)
-    status = models.CharField(max_length=5, choices=STATUS_CHOICES, default='user')
+    status = models.CharField(
+        max_length=5,
+        choices=STATUS_CHOICES,
+        default='user')
 
     def __str__(self):
         return '{} {}'.format(self.name, self.surname)
@@ -41,8 +44,11 @@ class Url(models.Model):
     url = models.URLField()
     title = models.CharField(max_length=32, default="")
     black_list = models.BooleanField(default=False)
-    description = models.TextField(max_length=200, blank=True, null = True)
-    category = models.ManyToManyField(Category, blank=True, verbose_name='Category')
+    description = models.TextField(max_length=200, blank=True, null=True)
+    category = models.ManyToManyField(
+        Category,
+        blank=True,
+        verbose_name='Category')
 
     def __str__(self):
         return self.title
@@ -61,7 +67,11 @@ class Chats(models.Model):
     title = models.CharField(max_length=32, default="")
     black_list = models.BooleanField(default=False)
     description = models.TextField(max_length=200, blank=True, null=True)
-    category = models.ManyToManyField(Category, blank=True, verbose_name='Category',)
+    category = models.ManyToManyField(
+        Category,
+        blank=True,
+        verbose_name='Category',
+    )
 
     def __str__(self):
         return self.title
@@ -77,16 +87,18 @@ class Chats(models.Model):
 
 class Post(models.Model):
     created_at = models.DateTimeField(auto_now=True, verbose_name='created at')
-    is_published = models.BooleanField(default=False, verbose_name='Is published?')
+    is_published = models.BooleanField(
+        default=False,
+        verbose_name='Is published?')
     title = models.CharField(max_length=200, verbose_name='Title')
     text = models.TextField(verbose_name='Text')
     file_field = models.FileField(
          upload_to='files/', verbose_name='File',
-         blank=True, null=True, help_text='Enter file'
+         blank=True, null=True, help_text='Enter file',
     )
     image = models.ImageField(
         upload_to='images/', verbose_name='image',
-        blank=True, null=True, help_text='Enter image'
+        blank=True, null=True, help_text='Enter image',
     )
 
     class Meta:

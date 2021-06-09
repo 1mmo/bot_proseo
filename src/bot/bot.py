@@ -1,10 +1,9 @@
-import os
 import logging
+import os
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from common import db
@@ -63,9 +62,9 @@ async def send_welcome(message: types.Message, from_user=None):
 
 
 @dp.message_handler(commands=['help'])
-async def help(message: types.Message):
+async def help_text(message: types.Message):
     reply = (
-        "Help Text"
+        "Помощь по боту"
     )
 
     await message.answer(reply)
@@ -99,6 +98,7 @@ async def process_url(message: types.Message, state: FSMContext):
         ur_link['url'] = message.text
     reply, result = db.check_url(ur_link['url'])
     if not result:
+        await state.finish()
         await message.answer(reply)
     else:
         await message.answer('Отправьте описание сайта')
@@ -113,14 +113,52 @@ async def process_description_url(message: types.Message, state: FSMContext):
     async with state.proxy() as ur_link:
         ur_link['description'] = message.text
     reply = '' + ur_link['url'] + '\n' + ur_link['description']
-    reply = f'Пользователь @{message.from_user.username} хочет добавить сайт:\n' + reply
+    reply = (f'Пользователь @{message.from_user.username} '
+             'хочет добавить сайт:\n' + reply)
     admin_ids = db.admin_ids()
     for admin_id in admin_ids:
         await bot.send_message(
             chat_id=admin_id,
             text=reply,
-            disable_web_page_preview=True)
+            disable_web_page_preview=False)
+    await state.finish()
     await message.answer('Администратор рассмотрит ваше предложение')
+
+
+@dp.message_handler(state=Form.chat)
+async def process_chat(message: types.Message, state: FSMContext):
+    """
+    Process adding chat
+    """
+    async with state.proxy() as chat_link:
+        chat_link['url'] = message.text
+    reply, result = db.check_chat(chat_link['url'])
+    if not result:
+        await state.finish()
+        await message.answer(reply)
+    else:
+        await message.answer('Отправьте описание чата')
+        await Form.description_chat.set()
+
+
+@dp.message_handler(state=Form.description_chat)
+async def process_description_chat(message: types.Message, state: FSMContext):
+    """
+    Process adding description for chat
+    """
+    async with state.proxy() as chat_link:
+        chat_link['description'] = message.text
+    reply = chat_link['url'] + '\n' + chat_link['description']
+    reply = (f'Пользователь @{message.from_user.username} '
+             'хочет добавить сайт:\n' + reply)
+    admin_ids = db.admin_ids()
+    for admin_id in admin_ids:
+        await bot.send_message(
+            chat_id=admin_id,
+            text=reply,
+            disable_web_page_preview=False)
+    await state.finish()
+    await message.answer('Администратор расмотрит ваше предложение')
 
 
 if __name__ == '__main__':
