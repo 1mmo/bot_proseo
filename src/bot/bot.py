@@ -4,6 +4,7 @@ import os
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from common import db
@@ -13,7 +14,7 @@ API_TOKEN = os.environ.get('BOT_TOKEN')
 
 logging.basicConfig(
     filename='bot.log',
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     datefmt='%d-%b-%y %H:%M:%S')
 
@@ -28,6 +29,22 @@ class Form(StatesGroup):
     chat = State()
     description_url = State()
     description_chat = State()
+
+
+@dp.callback_query_handler(lambda call: True, state='*')
+async def process_callback_keyboard(call: types.CallbackQuery,
+                                    callback_data=None,
+                                    state='*'):
+    if callback_data:
+        code = callback_data
+    else:
+        code = call.data
+    if code == 'cancel':
+        await cancel_handler(
+            message=call.message,
+            from_user=call.from_user,
+            state=state)
+        await call.answer()
 
 
 @dp.message_handler(commands=['start'])
@@ -79,11 +96,19 @@ async def help_text(message: types.Message):
 async def message_parse(message: types.Message):
     if message.text == 'Добавить сайт':
         reply = 'Отправьте ссылку на сайт (https://example.com)'
-        await message.answer(reply)
+        keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+        button_stop = types.inline_keyboard.InlineKeyboardButton(
+            text='Отмена', callback_data='cancel')
+        keyboard.row(button_stop)
+        await message.answer(reply, reply_markup=keyboard)
         await Form.url.set()
     elif message.text == 'Добавить чат':
         reply = 'Отправьте ссылку на чат (t.me/example)'
-        await message.answer(reply)
+        keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+        button_stop = types.inline_keyboard.InlineKeyboardButton(
+            text='Отмена', callback_data='cancel')
+        keyboard.row(button_stop)
+        await message.answer(reply, reply_markup=keyboard)
         await Form.chat.set()
     elif message.text == 'Каталог сайтов':
         pass
@@ -108,7 +133,12 @@ async def process_url(message: types.Message, state: FSMContext):
             await state.finish()
             await message.answer(reply)
         else:
-            await message.answer('Отправьте описание сайта')
+            keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+            button_stop = types.inline_keyboard.InlineKeyboardButton(
+                text='Отмена', callback_data='cancel')
+            keyboard.row(button_stop)
+            await message.answer('Отправьте описание сайта',
+                                 reply_markup=keyboard)
             await Form.description_url.set()
     elif 't.me' in ur_link['url']:
         reply = 'Это ссылка на чат'
@@ -160,7 +190,13 @@ async def process_chat(message: types.Message, state: FSMContext):
             await state.finish()
             await message.answer(reply)
         else:
-            await message.answer('Отправьте описание чата')
+            keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+            button_stop = types.inline_keyboard.InlineKeyboardButton(
+                text='Отмена', callback_data='cancel')
+            keyboard.row(button_stop)
+            await message.answer(
+                'Отправьте описание чата',
+                reply_markup=keyboard)
             await Form.description_chat.set()
     elif 'http' in chat_link['url']:
         await state.finish()
@@ -169,8 +205,7 @@ async def process_chat(message: types.Message, state: FSMContext):
         await message.answer(reply)
     else:
         await state.finish()
-        reply = 'Это не ссылка\n'
-        reply += 'Нажмите на кнопку "Добавить чат"\n'
+        reply = 'Нажмите на кнопку "Добавить чат"\n'
         if ' ' in chat_link['url']:
             reply += 'Пришлите ссылку на чат в формате t.me/example'
         else:
@@ -197,6 +232,30 @@ async def process_description_chat(message: types.Message, state: FSMContext):
             disable_web_page_preview=False)
     await state.finish()
     await message.answer('Администратор расмотрит ваше предложение')
+
+
+@dp.message_handler(state='*', commands='cancel')
+@dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
+async def cancel_handler(message: types.Message,
+                         state: FSMContext, from_user=None):
+    """
+    Отмена формы
+    """
+    logging.info('Get user id - {}'.format(from_user.id))
+    if from_user:
+        message.from_user.id = from_user.id
+    current_state = await state.get_state()
+    if current_state is None:
+        logging.info('CURRENT STATE IS NONE')
+
+    logging.debug('Cancelling state %r', current_state)
+    # Cancel state and inform user about it
+    await state.finish()
+    logging.info('FINISHED')
+    await bot.edit_message_text(
+        message_id=message.message_id,
+        chat_id=from_user.id,
+        text='Отменено.')
 
 
 if __name__ == '__main__':
