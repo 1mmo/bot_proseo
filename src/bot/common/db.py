@@ -148,7 +148,7 @@ def chat_ids():
     FROM users
     WHERE subscribe=TRUE
     """
-    connection.autocommit=True
+    connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute(query, connection)
     rows = cursor.fetchall()
