@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -22,6 +23,8 @@ logging.basicConfig(
 storage = MemoryStorage()
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=storage)
+
+WAIT_FOR = int(os.environ.get('WAIT_FOR'))
 
 
 class Form(StatesGroup):
@@ -259,5 +262,27 @@ async def cancel_handler(message: types.Message,
         text='Отменено.')
 
 
+async def periodic(WAIT_FOR):
+    while True:
+        await asyncio.sleep(WAIT_FOR)
+        if db.check_not_published_posts():
+            chat_ids = db.chat_ids()
+            posts = db.get_not_published_posts()
+            for post in posts:
+                reply = post[1] + '\n\n' + post[2]
+                if post[3] != 'None':
+                    reply += '\n\nесть файл'
+                if post[4] != 'None':
+                    reply += '\n\nесть картинка'
+                db.already_published(post[0])
+                for chat_id in chat_ids:
+                    logging.error(chat_id)
+                    await bot.send_message(
+                        chat_id=chat_id,
+                        text=reply)
+
+
 if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.create_task(periodic(WAIT_FOR))
     executor.start_polling(dp, skip_updates=True)
