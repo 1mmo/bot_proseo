@@ -31,17 +31,12 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 120 chars wide
         flake8 src/ --extend-exclude=.git,__pycache__,tests,migrations,\
         settings.py,manage.py,test.py,tests.py,scripts,*.yml --max-complexity=10 --max-line-length=120
-  deploy:
-
-      runs-on: ubuntu-latest
-
-      steps:
-      - uses: actions/checkout@v1
-      - name: Executing remote command
-        uses: appleboy/ssh-action@master
-        with:
-          HOST: ${{ secrets.DEPLOY_HOST }}
-          USERNAME: ${{ secrets.DEPLOY_USER }}
-          PORT: ${{ secrets.DEPLOY_PORT }}
-          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: cd ${{ secrets.PWD }} && git pull https://${{ secrets.GIT_USER }}:${{ secrets.GIT_PASS }}@github.com/shaggy-axel/bot_proseo.git && docker-compose down && docker-compose up -d
+    - uses: actions/checkout@v1
+    - name: Executing remote command
+      uses: appleboy/ssh-action@master
+      with:
+        HOST: ${{ secrets.DEPLOY_HOST }}
+        USERNAME: ${{ secrets.DEPLOY_USER }}
+        PORT: ${{ secrets.DEPLOY_PORT }}
+        KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        script: cd ${{ secrets.PWD }} && git pull https://${{ secrets.GIT_USER }}:${{ secrets.GIT_PASS }}@github.com/shaggy-axel/bot_proseo.git && docker-compose down && docker-compose up -d
