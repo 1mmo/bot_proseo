@@ -183,9 +183,10 @@ async def process_chat(message: types.Message, state: FSMContext):
     async with state.proxy() as chat_link:
         chat_link['url'] = message.text
     if 't.me' in chat_link['url']:
+        check = message.text
         if 'http' not in chat_link['url']:
-            chat_link['url'] = 'http://' + message.text
-        reply, result = db.check_chat(chat_link['url'])
+            check = 'http://' + message.text
+        reply, result = db.check_chat(check)
         if not result:
             await state.finish()
             await message.answer(reply)
