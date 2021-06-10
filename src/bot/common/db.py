@@ -148,7 +148,7 @@ def chat_ids():
     FROM users
     WHERE subscribe=TRUE
     """
-    connection.autocommit = True
+    connection.autocommit=True
     cursor = connection.cursor()
     cursor.execute(query, connection)
     rows = cursor.fetchall()
@@ -207,6 +207,9 @@ def get_not_published_posts():
     posts = []
     for res in result:
         get_text = res[1:-1].split('"')
+        while ',' in get_text:
+            get_text.remove(',')
+        get_text.remove
         logging.error('GET_TEXT')
         logging.error(get_text)
         created_at = get_text[1]
