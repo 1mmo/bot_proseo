@@ -46,6 +46,4 @@ jobs:
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
           # go to dir with project, get changes, down and up project
-          cd ${{ secrets.PWD }} && \
-          git pull https://${{ secrets.GIT_USER }}:${{ secrets.GIT_PASS }}@github.com/shaggy-axel/bot_proseo.git && \
-          docker-compose down && docker-compose up -d
+          cd ${{ secrets.PWD }} && git pull https://${{ secrets.GIT_USER }}:${{ secrets.GIT_PASS }}@github.com/shaggy-axel/bot_proseo.git && docker-compose down && docker-compose up -d
