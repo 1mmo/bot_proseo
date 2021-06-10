@@ -93,6 +93,8 @@ def check_url(value):
 
 
 def check_chat(value):
+    if 'https' in value:
+        value = value.replace('https', 'http')
     query = """
     SELECT COUNT(*)
     FROM chats
@@ -103,8 +105,28 @@ def check_chat(value):
     cursor.execute(query, connection)
     rows = cursor.fetchall()
     if rows[0][0] == 0:
-        reply = 'Администратор рассмотрит вашу заявку'
-        result = True
+        query = """
+        SELECT COUNT(*)
+        FROM chats
+        WHERE url='{}';
+        """.format(value.replace('http', 'https'))
+        cursor.execute(query, connection)
+        rows = cursor.fetchall()
+        if rows[0][0] == 0:
+            reply = 'Администратор рассмотрит вашу заявку'
+            result = True
+        else:
+            reply = 'Такой чат уже существует в базе данных'
+            query = """
+            SELECT black_list
+            FROM chats
+            WHERE url='{}'
+            """.format(value)
+            cursor.execute(query, connection)
+            rows = cursor.fetchall()
+            if rows[0][0]:
+                reply += '\nНо этот чат в черном списке'
+            result = False
     else:
         reply = 'Такой чат уже существует в базе данных'
         query = """
