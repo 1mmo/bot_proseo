@@ -25,6 +25,7 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
 WAIT_FOR = int(os.environ.get('WAIT_FOR'))
+DOCUMENTS_DIR = 'src/bot/documents'
 
 
 class Form(StatesGroup):
@@ -262,7 +263,7 @@ async def cancel_handler(message: types.Message,
         text='Отменено.')
 
 
-async def periodic(WAIT_FOR):
+async def periodic(WAIT_FOR): # NOQA[N803]
     while True:
         await asyncio.sleep(WAIT_FOR)
         if db.check_not_published_posts():
@@ -270,16 +271,39 @@ async def periodic(WAIT_FOR):
             posts = db.get_not_published_posts()
             for post in posts:
                 reply = post[1] + '\n\n' + post[2]
-                if post[3] != 'None':
-                    reply += '\n\nесть файл'
-                if post[4] != 'None':
-                    reply += '\n\nесть картинка'
+                if post[3] == 'None' and post[4] == 'None':
+                    for chat_id in chat_ids:
+                        await bot.send_message(chat_id, reply)
+                elif post[3] != 'None' and post[4] != 'None':
+                    file_path = os.path.join(DOCUMENTS_DIR, post[3])
+                    image_path = os.path.join(DOCUMENTS_DIR, post[4])
+                    for chat_id in chat_ids:
+                        with open(file_path, 'rb') as f:
+                            if 'mp4' in file_path:
+                                await bot.send_video(chat_id, f, caption=reply)
+                            else:
+                                await bot.send_document(chat_id, f, caption=reply)
+                    for chat_id in chat_ids:
+                        with open(image_path, 'rb') as ph:
+                            await bot.send_photo(chat_id, ph)
+                elif post[3] != 'None' and post[4] == 'None':
+                    file_path = os.path.join(DOCUMENTS_DIR, post[3])
+                    for chat_id in chat_ids:
+                        with open(file_path, 'rb') as f:
+                            if 'mp4' in file_path:
+                                await bot.send_video(chat_id, f, caption=reply)
+                            else:
+                                bot.send_document(chat_id, f, caption=reply)
+                elif post[4] != 'None' and post[3] == 'None':
+                    image_path = os.path.join(DOCUMENTS_DIR, post[4])
+                    for chat_id in chat_ids:
+                        with open(image_path, 'rb') as ph:
+                            await bot.send_photo(
+                                chat_id=chat_id,
+                                photo=ph,
+                                caption=reply)
+            for post in posts:
                 db.already_published(post[0])
-                for chat_id in chat_ids:
-                    logging.error(chat_id)
-                    await bot.send_message(
-                        chat_id=chat_id,
-                        text=reply)
 
 
 if __name__ == '__main__':

@@ -5,5 +5,5 @@ __pycache__
 src/static
 bot.log
 postgres_data
-src/documents/files/*
-src/documents/images/*
+src/bot/documents/files/*
+src/bot/documents/images/*
