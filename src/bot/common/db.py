@@ -206,27 +206,23 @@ def get_not_published_posts():
     post = []
     posts = []
     for res in result:
-        get_text = res[1:-1].split('"')
-        while ',' in get_text:
-            get_text.remove(',')
-        get_text.remove
-        logging.error('GET_TEXT')
-        logging.error(get_text)
-        created_at = get_text[1]
-        logging.error('CREATED AT')
-        logging.error(created_at)
-        title = get_text[2][1:-1]
-        logging.error('TITLE')
-        logging.error(title)
-        text = get_text[3]
+        get_text = res[1:-1]
+        get_text = get_text.split(',')
+        created_at = get_text[0].replace('"','')
+        title = get_text[1]
+        if ' ' in title:
+            title = title[1:-1]
+        text = get_text[2]
+        if ' ' in text or '\n' in text:
+            text = text[1:-1]
         post = [created_at, title, text]
         if 'files/' in res:
-            file_path = get_text[4].split(',')[1]
+            file_path = get_text[3]
             post.append(file_path)
         else:
             post.append('None')
         if 'images/' in res:
-            image_path = get_text[4].split(',')[2]
+            image_path = get_text[4]
             post.append(image_path)
         else:
             post.append('None')
