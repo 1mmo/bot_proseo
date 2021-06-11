@@ -142,6 +142,22 @@ def check_chat(value):
     return (reply, result)
 
 
+def chat_ids():
+    query = """
+    SELECT chat_id
+    FROM users
+    WHERE subscribe=TRUE
+    """
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    result = []
+    for i in range(len(rows)):
+        result.append(rows[i][0])
+    return result
+
+
 def admin_ids():
     query = """
     SELECT chat_id
@@ -156,3 +172,70 @@ def admin_ids():
     for i in range(len(rows)):
         result.append(rows[i][0])
     return result
+
+
+def check_not_published_posts():
+    query = """
+    SELECT COUNT(*)
+    FROM post
+    WHERE is_published=FALSE;
+    """
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    if rows[0][0] == 0:
+        return False
+    return True
+
+
+def get_not_published_posts():
+    query = """
+    SELECT (created_at, title, text, file_field, image)
+    FROM post
+    WHERE is_published=FALSE;
+    """
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    result = []
+    for i in range(len(rows)):
+        result.append(rows[i][0])
+    get_text = []
+    post = []
+    posts = []
+    for res in result:
+        get_text = res[1:-1]
+        get_text = get_text.split(',')
+        created_at = get_text[0].replace('"', '')
+        title = get_text[1]
+        if ' ' in title:
+            title = title[1:-1]
+        text = get_text[2]
+        if ' ' in text or '\n' in text:
+            text = text[1:-1]
+        post = [created_at, title, text]
+        if 'files/' in res:
+            file_path = get_text[3]
+            post.append(file_path)
+        else:
+            post.append('None')
+        if 'images/' in res:
+            image_path = get_text[4]
+            post.append(image_path)
+        else:
+            post.append('None')
+        posts.append(post)
+    return posts
+
+
+def already_published(value):
+    query = """
+    UPDATE post
+    SET is_published=TRUE
+    WHERE created_at='{}';
+    """.format(value)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
