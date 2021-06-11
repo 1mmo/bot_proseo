@@ -208,7 +208,7 @@ def get_not_published_posts():
     for res in result:
         get_text = res[1:-1]
         get_text = get_text.split(',')
-        created_at = get_text[0].replace('"','')
+        created_at = get_text[0].replace('"', '')
         title = get_text[1]
         if ' ' in title:
             title = title[1:-1]
