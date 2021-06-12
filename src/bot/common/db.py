@@ -247,6 +247,6 @@ def get_categories():
     """
     connection.autocommit = True
     cursor = connection.cursor()
-    cursor.execute(queqy, connection)
+    cursor.execute(query, connection)
     categories = cursor.fetchall()
     return categories
