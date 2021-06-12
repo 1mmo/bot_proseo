@@ -3,12 +3,15 @@ import logging
 import os
 
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.types import InlineKeyboardButton
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from common import db
+
+from telegram_bot_pagination import InlineKeyboardPaginator
 
 
 API_TOKEN = os.environ.get('BOT_TOKEN')
@@ -115,11 +118,35 @@ async def message_parse(message: types.Message):
         await message.answer(reply, reply_markup=keyboard)
         await Form.chat.set()
     elif message.text == 'Каталог сайтов':
-        pass
+        categories = db.get_categories()
+        paginator = InlineKeyboardPaginator(
+            1,
+            current_page=1,
+            data_pattern='elements#{page}',
+        )
+        for i in range(0, len(categories), 2):
+            if len(categories) != (i + 1):
+                paginator.add_after(
+                    InlineKeyboardButton(
+                        categories[i][1],
+                        callback_data=str(categories[i][0])),
+                    InlineKeyboardButton(
+                        categories[i+1][1],
+                        callback_data=str(categories[i+1][0])))
+            else:
+                paginator.add_after(
+                    InlineKeyboardButton(
+                        categories[i][1],
+                        callback_data=str(categories[i][0])))
+        await message.answer(
+            text='Категории:',
+            reply_markup=paginator.markup,
+        )
+
     elif message.text == 'Каталог чатов':
-        pass
+        categories = db.get_categories()
     else:
-        reply = message.text
+        reply = 'Не понятное сообщение, попробуй снова :-)'
         await message.answer(reply)
 
 
@@ -282,7 +309,8 @@ async def periodic(WAIT_FOR): # NOQA[N803]
                             if 'mp4' in file_path:
                                 await bot.send_video(chat_id, f, caption=reply)
                             else:
-                                await bot.send_document(chat_id, f, caption=reply)
+                                await bot.send_document(
+                                    chat_id, f, caption=reply)
                     for chat_id in chat_ids:
                         with open(image_path, 'rb') as ph:
                             await bot.send_photo(chat_id, ph)
