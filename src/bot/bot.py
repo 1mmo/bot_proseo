@@ -7,9 +7,10 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from telegram_bot_pagination import InlineKeyboardPaginator
 
 from common import db
+
+from telegram_bot_pagination import InlineKeyboardPaginator
 
 
 API_TOKEN = os.environ.get('BOT_TOKEN')
@@ -118,13 +119,13 @@ async def message_parse(message: types.Message):
     elif message.text == 'Каталог сайтов':
         categories = db.get_categories()
         paginator = InlineKeyboardPaginator(
-            len(categories)
+            len(categories),
             current_page=1,
             data_pattern='elements#{page}',
         )
         await message.answer(
             text='Категории:',
-            reply_markup=paginator
+            reply_markup=paginator,
         )
 
     elif message.text == 'Каталог чатов':
@@ -293,7 +294,8 @@ async def periodic(WAIT_FOR): # NOQA[N803]
                             if 'mp4' in file_path:
                                 await bot.send_video(chat_id, f, caption=reply)
                             else:
-                                await bot.send_document(chat_id, f, caption=reply)
+                                await bot.send_document(
+                                    chat_id, f, caption=reply)
                     for chat_id in chat_ids:
                         with open(image_path, 'rb') as ph:
                             await bot.send_photo(chat_id, ph)
