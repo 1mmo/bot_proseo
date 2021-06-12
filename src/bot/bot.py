@@ -3,6 +3,7 @@ import logging
 import os
 
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.types import InlineKeyboardButton
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -119,13 +120,27 @@ async def message_parse(message: types.Message):
     elif message.text == 'Каталог сайтов':
         categories = db.get_categories()
         paginator = InlineKeyboardPaginator(
-            len(categories),
+            1,
             current_page=1,
             data_pattern='elements#{page}',
         )
+        for i in range(0, len(categories), 2):
+            if len(categories) != (i + 1):
+                paginator.add_after(
+                    InlineKeyboardButton(
+                        categories[i][1],
+                        callback_data=str(categories[i][0])),
+                    InlineKeyboardButton(
+                        categories[i+1][1],
+                        callback_data=str(categories[i+1][0])))
+            else:
+                paginator.add_after(
+                    InlineKeyboardButton(
+                        categories[i][1],
+                        callback_data=str(categories[i][0])))
         await message.answer(
             text='Категории:',
-            reply_markup=paginator,
+            reply_markup=paginator.markup,
         )
 
     elif message.text == 'Каталог чатов':
