@@ -7,6 +7,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from telegram_bot_pagination import InlineKeyboardPaginator
 
 from common import db
 
@@ -115,11 +116,21 @@ async def message_parse(message: types.Message):
         await message.answer(reply, reply_markup=keyboard)
         await Form.chat.set()
     elif message.text == 'Каталог сайтов':
-        pass
+        categories = db.get_categories()
+        paginator = InlineKeyboardPaginator(
+            len(categories)
+            current_page=1,
+            data_pattern='elements#{page}',
+        )
+        await message.answer(
+            text='Категории:',
+            reply_markup=paginator
+        )
+
     elif message.text == 'Каталог чатов':
-        pass
+        categories = db.get_categories()
     else:
-        reply = message.text
+        reply = 'Не понятное сообщение, попробуй снова :-)'
         await message.answer(reply)
 
 
