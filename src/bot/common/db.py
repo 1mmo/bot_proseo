@@ -250,3 +250,27 @@ def get_categories():
     cursor.execute(query, connection)
     categories = cursor.fetchall()
     return categories
+
+
+def get_url_with_categories(value):
+    query = """
+    select url_id from urls_category
+    where category_id={};
+    """.format(value)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    url_ids = []
+    for i in range(len(rows)):
+        url_ids.append(rows[i][0])
+    result = []
+    for url_id in url_ids:
+        query = """
+        select (url, title)
+        from urls
+        where id={} and black_list=False
+        """.format(url_id)
+        cursor.execute(query, connection)
+        result.append(cursor.fetchall())
+    return result
