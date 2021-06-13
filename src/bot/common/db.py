@@ -239,3 +239,14 @@ def already_published(value):
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute(query, connection)
+
+
+def get_categories():
+    query = """
+    SELECT * FROM category;
+    """
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    categories = cursor.fetchall()
+    return categories

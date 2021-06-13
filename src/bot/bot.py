@@ -7,8 +7,11 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.types import InlineKeyboardButton
 
 from common import db
+
+from telegram_bot_pagination import InlineKeyboardPaginator
 
 
 API_TOKEN = os.environ.get('BOT_TOKEN')
@@ -33,6 +36,18 @@ class Form(StatesGroup):
     chat = State()
     description_url = State()
     description_chat = State()
+
+
+@dp.callback_query_handler(lambda call: call.data.split('#')[0] == 'category')
+async def category_page_callback(call):
+    logging.info(f'Chat id: {call.message.chat.id}')
+    page = int(call.data.split('#')[1])
+    logging.info(f'Page: {page}')
+    await bot.delete_message(
+        call.message.chat.id,
+        call.message.message_id,
+    )
+    await send_category_pages(call.message, page)
 
 
 @dp.callback_query_handler(lambda call: True, state='*')
@@ -115,12 +130,53 @@ async def message_parse(message: types.Message):
         await message.answer(reply, reply_markup=keyboard)
         await Form.chat.set()
     elif message.text == 'Каталог сайтов':
-        pass
+        await send_category_pages(message)
     elif message.text == 'Каталог чатов':
-        pass
+        await send_category_pages(message)
     else:
-        reply = message.text
+        reply = 'Не понятное сообщение, попробуй снова :-)'
         await message.answer(reply)
+
+
+async def send_category_pages(message: types.Message, page=1):
+    categories = db.get_categories()
+    pages = 1
+    if len(categories) % 10 == 0:
+        pages = len(categories)//10
+    else:
+        pages = len(categories)//10 + 1
+    paginator = InlineKeyboardPaginator(
+        pages,
+        current_page=page,
+        data_pattern='category#{page}',
+    )
+    start_f = page * 10 - 10
+    stop_f = page * 10
+    if len(categories) < stop_f:
+        stop_f = len(categories)
+    for i in range(start_f, stop_f, 2):
+        if stop_f != (i + 1):
+            paginator.add_before(
+                InlineKeyboardButton(
+                    categories[i][1],
+                    callback_data=str(categories[i][0])),
+                InlineKeyboardButton(
+                    categories[i+1][1],
+                    callback_data=str(categories[i+1][0])))
+        else:
+            paginator.add_before(
+                InlineKeyboardButton(
+                    categories[i][1],
+                    callback_data=str(categories[i][0])))
+
+    paginator.add_after(InlineKeyboardButton(
+        'Random link (web-site/chat)',
+        callback_data='random_link'))
+    await bot.send_message(
+        message.chat.id,
+        text=f'Категории {page}',
+        reply_markup=paginator.markup,
+    )
 
 
 @dp.message_handler(state=Form.url)
@@ -282,7 +338,8 @@ async def periodic(WAIT_FOR): # NOQA[N803]
                             if 'mp4' in file_path:
                                 await bot.send_video(chat_id, f, caption=reply)
                             else:
-                                await bot.send_document(chat_id, f, caption=reply)
+                                await bot.send_document(
+                                    chat_id, f, caption=reply)
                     for chat_id in chat_ids:
                         with open(image_path, 'rb') as ph:
                             await bot.send_photo(chat_id, ph)
