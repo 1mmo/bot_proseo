@@ -12,6 +12,7 @@ class UsersAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('__str__',)
     list_filter = ('title',)
+    ordering = ['title']
 
 
 @admin.register(Url)
