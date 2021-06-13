@@ -22,8 +22,8 @@ class UrlAdmin(admin.ModelAdmin):
 
 @admin.register(Chats)
 class ChatsAdmin(admin.ModelAdmin):
-    list_display = ("url", "title", "description", "black_list")
-    list_filter = ("url", "black_list")
+    list_display = ("url", "title", "description", "get_category", "black_list")
+    list_filter = ("url", "category", "black_list")
 
 
 @admin.register(Post)
