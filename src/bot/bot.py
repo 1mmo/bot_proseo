@@ -168,6 +168,10 @@ async def send_category_pages(message: types.Message, page=1):
                 InlineKeyboardButton(
                     categories[i][1],
                     callback_data=str(categories[i][0])))
+
+    paginator.add_after(InlineKeyboardButton(
+        'Random link (web-site/chat)',
+        callback_data='random_link'))
     await bot.send_message(
         message.chat.id,
         text=f'Категории {page}',
