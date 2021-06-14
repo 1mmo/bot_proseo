@@ -12,6 +12,7 @@ class UsersAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('__str__',)
     list_filter = ('title',)
+    ordering = ['title']
 
 
 @admin.register(Url)
@@ -22,8 +23,8 @@ class UrlAdmin(admin.ModelAdmin):
 
 @admin.register(Chats)
 class ChatsAdmin(admin.ModelAdmin):
-    list_display = ("url", "title", "description", "black_list")
-    list_filter = ("url", "black_list")
+    list_display = ("url", "title", "description", "get_category", "black_list")
+    list_filter = ("url", "category", "black_list")
 
 
 @admin.register(Post)
