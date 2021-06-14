@@ -273,4 +273,50 @@ def get_url_with_categories(value):
         """.format(url_id)
         cursor.execute(query, connection)
         result.append(cursor.fetchall())
-    return result
+    urls = result
+    result = []
+    for url in urls:
+        if url == []:
+            continue
+        result.append(url[0][0])
+    answer = []
+    for res in result:
+        res = res[1:-1]
+        res = res.split(',')
+        answer.append(res)
+    return answer
+
+
+def get_chat_with_categories(value):
+    query = """
+    select chats_id from chats_category
+    where category_id={};
+    """.format(value)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    chat_ids = []
+    for i in range(len(rows)):
+        chat_ids.append(rows[i][0])
+    result = []
+    for chat_id in chat_ids:
+        query = """
+        select (url, title)
+        from chats
+        where id={} and black_list=False
+        """.format(chat_id)
+        cursor.execute(query, connection)
+        result.append(cursor.fetchall())
+    chats = result
+    result = []
+    for chat in chats:
+        if chat == []:
+            continue
+        result.append(chat[0][0])
+    answer = []
+    for res in result:
+        res = res[1:-1]
+        res = res.split(',')
+        answer.append(res)
+    return answer

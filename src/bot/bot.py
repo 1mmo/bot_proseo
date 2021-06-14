@@ -11,7 +11,7 @@ from aiogram.types import InlineKeyboardButton
 
 from common import db
 
-from telegram_bot_pagination import InlineKeyboardPaginator
+from keyboard.pagination_kb import InlineKeyboardPaginator
 
 
 API_TOKEN = os.environ.get('BOT_TOKEN')
@@ -38,16 +38,44 @@ class Form(StatesGroup):
     description_chat = State()
 
 
-@dp.callback_query_handler(lambda call: call.data.split('#')[0] == 'category')
+@dp.callback_query_handler(
+    lambda call: call.data.split('#')[0].split('_')[0] == 'category')
 async def category_page_callback(call):
-    logging.info(f'Chat id: {call.message.chat.id}')
     page = int(call.data.split('#')[1])
-    logging.info(f'Page: {page}')
+    type_of_category = call.data.split('#')[0]
     await bot.delete_message(
         call.message.chat.id,
         call.message.message_id,
     )
-    await send_category_pages(call.message, page)
+    await send_category_pages(call.message, page, type_of_category)
+
+
+@dp.callback_query_handler(
+    lambda call: call.data.split('#')[0] == 'url')
+async def category_of_url_pages(call):
+    value = int(call.data.split('#')[1])
+    page = 1
+    urls = db.get_url_with_categories(value)
+    await bot.delete_message(
+        call.message.chat.id,
+        call.message.message_id)
+    await send_category_url_pages(
+        call.message,
+        page, urls)
+
+
+@dp.callback_query_handler(
+    lambda call: call.data.split('#')[0] == 'chat')
+async def category_of_chat_pages(call):
+    value = int(call.data.split('#')[1])
+    page = 1
+    chats = db.get_chat_with_categories(value)
+    await bot.delete_message(
+        call.message.chat.id,
+        call.message.message_id)
+    await send_category_chat_pages(
+        call.message,
+        page, chats)
 
 
 @dp.callback_query_handler(lambda call: True, state='*')
@@ -130,51 +158,154 @@ async def message_parse(message: types.Message):
         await message.answer(reply, reply_markup=keyboard)
         await Form.chat.set()
     elif message.text == 'Каталог сайтов':
-        await send_category_pages(message)
+        await send_category_pages(message, 1, 'category_url')
     elif message.text == 'Каталог чатов':
-        await send_category_pages(message)
+        await send_category_pages(message, 1, 'category_chat')
     else:
         reply = 'Не понятное сообщение, попробуй снова :-)'
         await message.answer(reply)
 
 
-async def send_category_pages(message: types.Message, page=1):
+async def send_category_pages(message: types.Message, page, type_of_category):
     categories = db.get_categories()
     pages = 1
     if len(categories) % 10 == 0:
         pages = len(categories)//10
     else:
         pages = len(categories)//10 + 1
-    paginator = InlineKeyboardPaginator(
-        pages,
-        current_page=page,
-        data_pattern='category#{page}',
-    )
+    if type_of_category == 'category_url':
+        paginator = InlineKeyboardPaginator(
+            pages,
+            current_page=page,
+            data_pattern='category_url#{page}',
+        )
+    else:
+        paginator = InlineKeyboardPaginator(
+            pages,
+            current_page=page,
+            data_pattern='category_chat#{page}',
+        )
     start_f = page * 10 - 10
     stop_f = page * 10
+    logging.info(type_of_category)
+    cd = 'url'
+    # cd - callback data type
+    if type_of_category == 'category_url':
+        cd = 'url#'
+    elif type_of_category == 'category_chat':
+        cd = 'chat#'
+
     if len(categories) < stop_f:
         stop_f = len(categories)
+
     for i in range(start_f, stop_f, 2):
         if stop_f != (i + 1):
             paginator.add_before(
                 InlineKeyboardButton(
                     categories[i][1],
-                    callback_data=str(categories[i][0])),
+                    callback_data=cd+str(categories[i][0])),
                 InlineKeyboardButton(
                     categories[i+1][1],
-                    callback_data=str(categories[i+1][0])))
+                    callback_data=cd+str(categories[i+1][0])))
         else:
             paginator.add_before(
                 InlineKeyboardButton(
                     categories[i][1],
-                    callback_data=str(categories[i][0])))
+                    callback_data=cd+str(categories[i][0])))
 
     paginator.add_after(InlineKeyboardButton(
         'Random link (web-site/chat)',
         callback_data='random_link'))
+
     await bot.send_message(
         message.chat.id,
         text=f'Категории {page}',
+        reply_markup=paginator.markup,
+    )
+
+
+async def send_category_url_pages(message: types.Message, page, urls):
+    pages = 1
+    if len(urls) % 10 == 0:
+        pages = len(urls)//10
+    else:
+        pages = len(urls)//10 + 1
+    paginator = InlineKeyboardPaginator(
+        pages,
+        current_page=page,
+        data_pattern='urls#{page}',
+    )
+    start_f = page * 10 - 10
+    stop_f = page * 10
+
+    if len(urls) < stop_f:
+        stop_f = len(urls)
+
+    for i in range(start_f, stop_f, 2):
+        if stop_f != (i + 1):
+            paginator.add_before(
+                InlineKeyboardButton(
+                    text=urls[i][1],
+                    url=urls[i][0]),
+                InlineKeyboardButton(
+                    text=urls[i+1][1],
+                    url=urls[i][0]))
+        else:
+            paginator.add_before(
+                InlineKeyboardButton(
+                    text=urls[i][1],
+                    url=urls[i][0]))
+
+    paginator.add_after(InlineKeyboardButton(
+        'Назад в категории',
+        callback_data='category_url#1'))
+
+    await bot.send_message(
+        message.chat.id,
+        text=f'Сайты {page}',
+        reply_markup=paginator.markup,
+    )
+
+
+async def send_category_chat_pages(message: types.Message, page, chats):
+    pages = 1
+    if len(chats) % 10 == 0:
+        pages = len(chats)//10
+    else:
+        pages = len(chats)//10 + 1
+    paginator = InlineKeyboardPaginator(
+        pages,
+        current_page=page,
+        data_pattern='chats#{page}',
+    )
+    start_f = page * 10 - 10
+    stop_f = page * 10
+
+    if len(chats) < stop_f:
+        stop_f = len(chats)
+
+    for i in range(start_f, stop_f, 2):
+        if stop_f != (i + 1):
+            paginator.add_before(
+                InlineKeyboardButton(
+                    text=chats[i][1],
+                    url=chats[i][0]),
+                InlineKeyboardButton(
+                    text=chats[i+1][1],
+                    url=chats[i][0]))
+        else:
+            paginator.add_before(
+                InlineKeyboardButton(
+                    text=chats[i][1],
+                    url=chats[i][0]))
+
+    paginator.add_after(InlineKeyboardButton(
+        'Назад в категории',
+        callback_data='category_chat#1'))
+
+    await bot.send_message(
+        message.chat.id,
+        text=f'Чаты {page}',
         reply_markup=paginator.markup,
     )
 
@@ -195,7 +326,8 @@ async def process_url(message: types.Message, state: FSMContext):
         else:
             keyboard = types.inline_keyboard.InlineKeyboardMarkup()
             button_stop = types.inline_keyboard.InlineKeyboardButton(
-                text='Отмена', callback_data='cancel')
+                    text='Отмена',
+                    callback_data='cancel')
             keyboard.row(button_stop)
             await message.answer('Отправьте описание сайта',
                                  reply_markup=keyboard)
