@@ -215,7 +215,8 @@ async def send_category_pages(message: types.Message, page, type_of_category):
 
     paginator.add_after(InlineKeyboardButton(
         'Random link (web-site/chat)',
-        callback_data='random_link'))
+        callback_data='random_link'),
+        url=db.get_all_urls())
 
     await bot.send_message(
         message.chat.id,

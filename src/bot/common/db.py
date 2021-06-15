@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 
 import psycopg2
 
@@ -320,3 +321,19 @@ def get_chat_with_categories(value):
         res = res.split(',')
         answer.append(res)
     return answer
+
+def get_all_urls():
+    query = """
+    select urls.url, chats.url from urls right join chats
+    on urls.id=chats.id;
+    """
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    rows = cursor.fetchall()
+    rows = ','.join(map(','.join,rows))
+    rows = rows.split(',')
+    random_number=random.randint(0, len(rows)-1)
+    return rows[random_number]
+
+
