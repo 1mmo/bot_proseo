@@ -176,7 +176,7 @@ async def message_parse(message: types.Message):
     elif 'Каталог чатов' in message.text:
         await send_category_pages(message, 1, 'category_chat')
     elif 'Черный список' in message.text:
-        await message.answer('Черный список')
+        await message.answer('В разработке')
     elif 'Рандомный' in message.text:
         keyboard = types.InlineKeyboardMarkup(resize_keyboard=True)
         url = db.get_random_url()
@@ -187,7 +187,7 @@ async def message_parse(message: types.Message):
             text='Перейти по ссылке?',
             reply_markup=keyboard)
     else:
-        reply = 'Не понятное сообщение, попробуй снова :tongue:'
+        reply = emojize('Не понятное сообщение, попробуй снова :tongue:')
         await message.answer(reply)
 
 
