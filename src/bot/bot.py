@@ -11,6 +11,8 @@ from aiogram.types import InlineKeyboardButton
 
 from common import db
 
+from emoji import emojize
+
 from keyboard.pagination_kb import InlineKeyboardPaginator
 
 
@@ -97,18 +99,30 @@ async def process_callback_keyboard(call: types.CallbackQuery,
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message, from_user=None):
     button_urls = types.KeyboardButton(
-        text='Каталог сайтов', call_data='urls')
+        text=emojize(':closed_book: Каталог сайтов :globe_with_meridians:'),
+        call_data='urls')
     button_chats = types.KeyboardButton(
-        text='Каталог чатов', call_data='chats')
+        text=emojize(':blue_book: Каталог чатов :speech_balloon:'),
+        call_data='chats')
     button_add_url = types.KeyboardButton(
-        text='Добавить сайт', call_data='add_url')
+        text=emojize(':plus: Добавить сайт :globe_with_meridians:'),
+        call_data='add_url')
     button_add_chat = types.KeyboardButton(
-        text='Добавить чат', call_data='add_chat')
+        text=emojize(':plus: Добавить чат :speech_balloon:'),
+        call_data='add_chat')
+    button_black_list = types.KeyboardButton(
+        text=emojize(':chains: Черный список :wastebasket:'),
+        call_data='black_list')
+    button_random_url = types.KeyboardButton(
+        text=emojize(':game_die: Рандомный сайт/чат :game_die:'),
+        call_data='random_url')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.row(button_random_url)
     keyboard.row(button_urls)
     keyboard.insert(button_chats)
     keyboard.row(button_add_url)
     keyboard.insert(button_add_chat)
+    keyboard.row(button_black_list)
     values = []
     if from_user:
         name = from_user.first_name
@@ -141,7 +155,7 @@ async def help_text(message: types.Message):
 
 @dp.message_handler()
 async def message_parse(message: types.Message):
-    if message.text == 'Добавить сайт':
+    if 'Добавить сайт' in message.text:
         reply = 'Отправьте ссылку на сайт (https://example.com)'
         keyboard = types.inline_keyboard.InlineKeyboardMarkup()
         button_stop = types.inline_keyboard.InlineKeyboardButton(
@@ -149,7 +163,7 @@ async def message_parse(message: types.Message):
         keyboard.row(button_stop)
         await message.answer(reply, reply_markup=keyboard)
         await Form.url.set()
-    elif message.text == 'Добавить чат':
+    elif 'Добавить чат' in message.text:
         reply = 'Отправьте ссылку на чат (t.me/example)'
         keyboard = types.inline_keyboard.InlineKeyboardMarkup()
         button_stop = types.inline_keyboard.InlineKeyboardButton(
@@ -157,12 +171,23 @@ async def message_parse(message: types.Message):
         keyboard.row(button_stop)
         await message.answer(reply, reply_markup=keyboard)
         await Form.chat.set()
-    elif message.text == 'Каталог сайтов':
+    elif 'Каталог сайтов' in message.text:
         await send_category_pages(message, 1, 'category_url')
-    elif message.text == 'Каталог чатов':
+    elif 'Каталог чатов' in message.text:
         await send_category_pages(message, 1, 'category_chat')
+    elif 'Черный список' in message.text:
+        await message.answer('Черный список')
+    elif 'Рандомный' in message.text:
+        keyboard = types.InlineKeyboardMarkup(resize_keyboard=True)
+        url = db.get_random_url()
+        keyboard.row(types.InlineKeyboardButton(
+            text='Рандомная ссылка', url=url))
+        await bot.send_message(
+            chat_id=message.from_user.id,
+            text='Перейти по ссылке?',
+            reply_markup=keyboard)
     else:
-        reply = 'Не понятное сообщение, попробуй снова :-)'
+        reply = 'Не понятное сообщение, попробуй снова :tongue:'
         await message.answer(reply)
 
 
@@ -212,10 +237,6 @@ async def send_category_pages(message: types.Message, page, type_of_category):
                 InlineKeyboardButton(
                     categories[i][1],
                     callback_data=cd+str(categories[i][0])))
-
-    paginator.add_after(InlineKeyboardButton(
-        'Random link (web-site/chat)',
-        callback_data='random_link'))
 
     await bot.send_message(
         message.chat.id,
