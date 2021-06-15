@@ -187,7 +187,7 @@ async def message_parse(message: types.Message):
             text='Перейти по ссылке?',
             reply_markup=keyboard)
     else:
-        reply = emogize('Не понятное сообщение, попробуй снова :tongue:')
+        reply = emojize('Не понятное сообщение, попробуй снова :tongue:')
         await message.answer(reply)
 
 
