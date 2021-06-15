@@ -325,16 +325,21 @@ def get_chat_with_categories(value):
 
 def get_random_url():
     query = """
-    select urls.url, chats.url
-    from urls right join chats
-    on urls.id=chats.id
-    where urls.black_list=FALSE and chats.black_list=FALSE;
+    select url from urls
+    where black_list=FALSE;
     """
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute(query, connection)
     rows = cursor.fetchall()
-    rows = ','.join(map(','.join, rows))
-    rows = rows.split(',')
-    random_number=random.randint(0, len(rows) - 1) # NOQA[DUO102]
-    return rows[random_number]
+    query = """
+    select url from chats
+    where black_list=FALSE;
+    """
+    cursor.execute(query, connection)
+    rows += cursor.fetchall()
+    result = []
+    for row in rows:
+        result.append(row[0])
+    random_number = random.randint(0, len(result) - 1) # NOQA[DUO102]
+    return result[random_number]
