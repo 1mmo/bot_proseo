@@ -36,8 +36,12 @@ DOCUMENTS_DIR = 'src/bot/documents'
 class Form(StatesGroup):
     url = State()
     chat = State()
+    url_bl = State()
+    chat_bl = State()
     description_url = State()
     description_chat = State()
+    description_url_bl = State()
+    description_chat_bl = State()
 
 
 @dp.callback_query_handler(
@@ -144,6 +148,13 @@ async def send_welcome(message: types.Message, from_user=None):
     button_random_url = types.KeyboardButton(
         text=emojize(':game_die: Рандомный сайт/чат :game_die:'),
         call_data='random_url')
+    button_add_url_to_bl = types.KeyboardButton(
+        text=emojize(':globe_with_meridians: '
+                     'Добавить сайт в ЧС :wastebasket:'),
+        call_data='add_url_bl')
+    button_add_chat_to_bl = types.KeyboardButton(
+        text=emojize(':speech_balloon: Добавить чат в ЧС :wastebasket:'),
+        call_data='add_chat_bl')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.row(button_random_url)
     keyboard.row(button_urls)
@@ -151,6 +162,8 @@ async def send_welcome(message: types.Message, from_user=None):
     keyboard.row(button_add_url)
     keyboard.insert(button_add_chat)
     keyboard.row(button_black_list)
+    keyboard.row(button_add_url_to_bl)
+    keyboard.insert(button_add_chat_to_bl)
     values = []
     if from_user:
         name = from_user.first_name
@@ -183,7 +196,23 @@ async def help_text(message: types.Message):
 
 @dp.message_handler()
 async def message_parse(message: types.Message):
-    if 'Добавить сайт' in message.text:
+    if 'Добавить сайт в ЧС' in message.text:
+        reply = 'Отправьте ссылку на сайт (https://example.com)'
+        keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+        button_stop = types.inline_keyboard.InlineKeyboardButton(
+            text='Отмена', callback_data='cancel')
+        keyboard.row(button_stop)
+        await message.answer(reply, reply_markup=keyboard)
+        await Form.url_bl.set()
+    elif 'Добавить чат в ЧС' in message.text:
+        reply = 'Отправьте ссылку на чат (https://example.com)'
+        keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+        button_stop = types.inline_keyboard.InlineKeyboardButton(
+            text='Отмена', callback_data='cancel')
+        keyboard.row(button_stop)
+        await message.answer(reply, reply_markup=keyboard)
+        await Form.chat_bl.set()
+    elif 'Добавить сайт' in message.text:
         reply = 'Отправьте ссылку на сайт (https://example.com)'
         keyboard = types.inline_keyboard.InlineKeyboardMarkup()
         button_stop = types.inline_keyboard.InlineKeyboardButton(
@@ -466,7 +495,7 @@ async def process_description_chat(message: types.Message, state: FSMContext):
         chat_link['description'] = message.text
     reply = chat_link['url'] + '\n' + chat_link['description']
     reply = (f'Пользователь @{message.from_user.username} '
-             'хочет добавить сайт:\n' + reply)
+             'хочет добавить чат:\n' + reply)
     admin_ids = db.admin_ids()
     for admin_id in admin_ids:
         await bot.send_message(
@@ -475,6 +504,129 @@ async def process_description_chat(message: types.Message, state: FSMContext):
             disable_web_page_preview=False)
     await state.finish()
     await message.answer('Администратор расмотрит ваше предложение')
+
+
+@dp.message_handler(state=Form.url_bl)
+async def process_url_bl(message: types.Message, state: FSMContext):
+    """
+    Process adding url to black list
+    """
+    async with state.proxy() as ur_link:
+        ur_link['url'] = message.text
+    if (('http://' in ur_link['url'] or 'https://' in ur_link['url']) and
+            't.me' not in ur_link['url']):
+        result = db.check_url_black(ur_link['url'])
+        if result:
+            reply = 'Этот сайт уже в Черном Списке'
+            await state.finish()
+            await message.answer(reply)
+        else:
+            keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+            button_stop = types.inline_keyboard.InlineKeyboardButton(
+                    text='Отмена',
+                    callback_data='cancel')
+            keyboard.row(button_stop)
+            reply = 'Напишите, почему вы хотите добавить сайт в Черный список'
+            await message.answer(
+                reply,
+                reply_markup=keyboard)
+            await Form.description_url_bl.set()
+    elif 't.me' in ur_link['url']:
+        reply = 'Это ссылка на чат'
+        reply += '\nНажмите на кнопку "Добавить чат в ЧС"'
+        await message.answer(reply)
+        await state.finish()
+    else:
+        reply = 'Это не ссылка на сайт\nНажмите на кнопку "Добавить сайт в ЧС"'
+        if ' ' in ur_link['url']:
+            reply += '\nПришлите ссылку в формате http://example.com'
+        else:
+            reply += f'\nПришлите ссылку в формате http://{ur_link["url"]}'
+        await message.answer(reply)
+        await state.finish()
+
+
+@dp.message_handler(state=Form.description_url_bl)
+async def process_description_url_bl(message: types.Message,
+                                     state: FSMContext):
+    """
+    Process adding description for site to black list
+    """
+    async with state.proxy() as ur_link:
+        ur_link['description'] = message.text
+    reply = '' + ur_link['url'] + '\nПричина:\n' + ur_link['description']
+    reply = (f'Пользователь @{message.from_user.username} '
+             'хочет добавить сайт в ЧС:\n' + reply)
+    admin_ids = db.admin_ids()
+    for admin_id in admin_ids:
+        await bot.send_message(
+            chat_id=admin_id,
+            text=reply,
+            disable_web_page_preview=False)
+    await state.finish()
+    await message.answer('Администратор рассмотрит ваше предложение')
+
+
+@dp.message_handler(state=Form.chat_bl)
+async def process_chat_to_black(message: types.Message, state: FSMContext):
+    """
+    Process adding chat to black list
+    """
+    async with state.proxy() as chat_link:
+        chat_link['url'] = message.text
+    if 't.me' in chat_link['url']:
+        check = message.text
+        if 'http' not in chat_link['url']:
+            check = 'http://' + message.text
+        result = db.check_chat_black(check)
+        if result:
+            reply = 'Чат уже есть в Черном Списке'
+            await state.finish()
+            await message.answer(reply)
+        else:
+            keyboard = types.inline_keyboard.InlineKeyboardMarkup()
+            button_stop = types.inline_keyboard.InlineKeyboardButton(
+                text='Отмена', callback_data='cancel')
+            keyboard.row(button_stop)
+            await message.answer(
+                'Отправьте описание чата',
+                reply_markup=keyboard)
+            await Form.description_chat_bl.set()
+    elif 'http' in chat_link['url']:
+        await state.finish()
+        reply = 'Это ссылка на сайт.\n'
+        reply += 'Нажмите на кнопку "Добавить сайт в ЧС"\n'
+        await message.answer(reply)
+    else:
+        await state.finish()
+        reply = 'Нажмите на кнопку "Добавить чат в ЧС"\n'
+        if ' ' in chat_link['url']:
+            reply += 'Пришлите ссылку на чат в формате t.me/example'
+        else:
+            reply += 'Пришлите ссылку на чат в формате '
+            reply += f't.me/{chat_link["url"]}'
+        await message.answer(reply)
+
+
+@dp.message_handler(state=Form.description_chat_bl)
+async def process_description_chat_bl(message: types.Message,
+                                      state: FSMContext):
+    """
+    Process adding description for chat to black list
+    """
+    async with state.proxy() as ur_link:
+        ur_link['description'] = message.text
+    reply = '' + ur_link['url'] + '\nПричина:\n' + ur_link['description']
+    reply = (f'Пользователь @{message.from_user.username} '
+             'хочет добавить чат в ЧС:\n' + reply)
+    admin_ids = db.admin_ids()
+    for admin_id in admin_ids:
+        await bot.send_message(
+            chat_id=admin_id,
+            text=reply,
+            disable_web_page_preview=False)
+    await state.finish()
+    await message.answer('Администратор рассмотрит ваше предложение')
 
 
 @dp.message_handler(state='*', commands='cancel')

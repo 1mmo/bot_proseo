@@ -3,6 +3,7 @@ import os
 import random
 
 import psycopg2
+from psycopg2.errors import UndefinedColumn
 
 
 logging.basicConfig(
@@ -141,6 +142,45 @@ def check_chat(value):
             reply += '\nНо этот чат в черном списке'
         result = False
     return (reply, result)
+
+
+def check_url_black(value):
+    query = """
+    select black_list
+    from urls
+    where url='{}'
+    """.format(value)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    try:
+        cursor.execute(query, connection)
+    except UndefinedColumn:
+        return False
+    result = cursor.fetchall()
+    if result == []:
+        return False
+    result = result[0][0]
+    return result
+
+
+def check_chat_black(value):
+    query = """
+    select black_list
+    from chats
+    where url='{}'
+    """.format(value)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    try:
+        cursor.execute(query, connection)
+    except UndefinedColumn:
+        return False
+    result = cursor.fetchall()
+    if result == []:
+        return False
+    result = result[0][0]
+    return result
 
 
 def chat_ids():
