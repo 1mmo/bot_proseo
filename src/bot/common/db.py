@@ -383,3 +383,12 @@ def get_random_url():
         result.append(row[0])
     random_number = random.randint(0, len(result) - 1) # NOQA[DUO102]
     return result[random_number]
+
+
+def get_category_title(value):
+    query = f'select title from category where id={value}'
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+    title = cursor.fetchall()
+    return title[0][0]
