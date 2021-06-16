@@ -233,7 +233,14 @@ async def message_parse(message: types.Message):
     elif 'Каталог чатов' in message.text:
         await send_category_pages(message, 1, 'category_chat')
     elif 'Черный список' in message.text:
-        await message.answer('В разработке')
+        keyboard = types.InlineKeyboardMarkup(resize_keyboard=True)
+        url = 'https://t.me/blacklist_TF'
+        keyboard.row(types.InlineKeyboardButton(
+            text='Да', url=url))
+        await bot.send_message(
+            chat_id=message.from_user.id,
+            text='Переходим в ЧС?',
+            reply_markup=keyboard)
     elif 'Рандомный' in message.text:
         keyboard = types.InlineKeyboardMarkup(resize_keyboard=True)
         url = db.get_random_url()
