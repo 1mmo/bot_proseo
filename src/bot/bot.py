@@ -299,7 +299,7 @@ async def send_category_url_pages(message: types.Message, page, urls, value):
                     url=urls[i][0]),
                 InlineKeyboardButton(
                     text=urls[i+1][1],
-                    url=urls[i][0]))
+                    url=urls[i+1][0]))
         else:
             paginator.add_before(
                 InlineKeyboardButton(
@@ -342,7 +342,7 @@ async def send_category_chat_pages(message: types.Message, page, chats):
                     url=chats[i][0]),
                 InlineKeyboardButton(
                     text=chats[i+1][1],
-                    url=chats[i][0]))
+                    url=chats[i+1][0]))
         else:
             paginator.add_before(
                 InlineKeyboardButton(
