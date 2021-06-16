@@ -338,24 +338,26 @@ async def send_category_url_pages(message: types.Message, page, urls, value):
     paginator.add_after(InlineKeyboardButton(
         'Назад в категории',
         callback_data='category_url#1'))
-
+    title = db.get_category_title(value)
+    reply = f'Сайты\n{title}\n{page} стр.'
     await bot.send_message(
         message.chat.id,
-        text=f'Сайты {page}',
+        text=reply,
         reply_markup=paginator.markup,
     )
 
 
-async def send_category_chat_pages(message: types.Message, page, chats):
+async def send_category_chat_pages(message: types.Message, page, chats, value):
     pages = 1
     if len(chats) % 10 == 0:
         pages = len(chats)//10
     else:
         pages = len(chats)//10 + 1
+    data_pttrn = f'chat_{value}' + '#{page}'
     paginator = InlineKeyboardPaginator(
         pages,
         current_page=page,
-        data_pattern='chats#{page}',
+        data_pattern=data_pttrn,
     )
     start_f = page * 10 - 10
     stop_f = page * 10
@@ -381,10 +383,11 @@ async def send_category_chat_pages(message: types.Message, page, chats):
     paginator.add_after(InlineKeyboardButton(
         'Назад в категории',
         callback_data='category_chat#1'))
-
+    title = db.get_category_title(value)
+    reply = f'Чаты\n{title}\n{page} стр.'
     await bot.send_message(
         message.chat.id,
-        text=f'Чаты {page}',
+        text=reply,
         reply_markup=paginator.markup,
     )
 
