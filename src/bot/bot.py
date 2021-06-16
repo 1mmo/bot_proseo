@@ -53,8 +53,8 @@ async def category_page_callback(call):
 
 
 @dp.callback_query_handler(
-    lambda call: call.data.split('#')[0] == 'url')
-async def category_of_url_pages(call):
+    lambda call: call.data.split('#')[0] == 'url_value')
+async def category_of_url_pages_start(call):
     value = int(call.data.split('#')[1])
     page = 1
     urls = db.get_url_with_categories(value)
@@ -63,12 +63,12 @@ async def category_of_url_pages(call):
         call.message.message_id)
     await send_category_url_pages(
         call.message,
-        page, urls)
+        page, urls, value)
 
 
 @dp.callback_query_handler(
-    lambda call: call.data.split('#')[0] == 'chat')
-async def category_of_chat_pages(call):
+    lambda call: call.data.split('#')[0] == 'chat_value')
+async def category_of_chat_pages_start(call):
     value = int(call.data.split('#')[1])
     page = 1
     chats = db.get_chat_with_categories(value)
@@ -77,7 +77,35 @@ async def category_of_chat_pages(call):
         call.message.message_id)
     await send_category_chat_pages(
         call.message,
-        page, chats)
+        page, chats, value)
+
+
+@dp.callback_query_handler(
+    lambda call: 'urls_' in call.data.split('#')[0])
+async def category_of_url_pages(call):
+    page = int(call.data.split('#')[1])
+    value = int(call.data.split('#')[0].split('_')[1])
+    urls = db.get_url_with_categories(value)
+    await bot.delete_message(
+        call.message.chat.id,
+        call.message.message_id)
+    await send_category_url_pages(
+        call.message,
+        page, urls, value)
+
+
+@dp.callback_query_handler(
+    lambda call: 'chats_' in call.data.split('#')[0])
+async def category_of_chat_pages(call):
+    page = int(call.data.split('#')[1])
+    value = int(call.data.split('#')[0].split('_')[1])
+    chats = db.get_chat_with_categories(value)
+    await bot.delete_message(
+        call.message.chat.id,
+        call.message.message_id)
+    await send_category_chat_pages(
+        call.message,
+        page, chats, value)
 
 
 @dp.callback_query_handler(lambda call: True, state='*')
@@ -213,12 +241,12 @@ async def send_category_pages(message: types.Message, page, type_of_category):
     start_f = page * 10 - 10
     stop_f = page * 10
     logging.info(type_of_category)
-    cd = 'url'
+    cd = ''
     # cd - callback data type
     if type_of_category == 'category_url':
-        cd = 'url#'
+        cd = 'url_value#'
     elif type_of_category == 'category_chat':
-        cd = 'chat#'
+        cd = 'chat_value#'
 
     if len(categories) < stop_f:
         stop_f = len(categories)
@@ -245,16 +273,17 @@ async def send_category_pages(message: types.Message, page, type_of_category):
     )
 
 
-async def send_category_url_pages(message: types.Message, page, urls):
+async def send_category_url_pages(message: types.Message, page, urls, value):
     pages = 1
     if len(urls) % 10 == 0:
         pages = len(urls)//10
     else:
         pages = len(urls)//10 + 1
+    data_pttrn = f'urls_{value}' + '#{page}'
     paginator = InlineKeyboardPaginator(
         pages,
         current_page=page,
-        data_pattern='urls#{page}',
+        data_pattern=data_pttrn,
     )
     start_f = page * 10 - 10
     stop_f = page * 10
