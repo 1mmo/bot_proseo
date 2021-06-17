@@ -112,6 +112,30 @@ async def category_of_chat_pages(call):
         page, chats, value)
 
 
+@dp.callback_query_handler(
+    lambda call: 'сайтЧС' in call.data.split('#')[1])
+async def send_black_list_url(call):
+    username = call.data.split('#')[0]
+    url = call.data.split('#')[2]
+    why = call.data.split('#')[3]
+    reply = f'Пользователь {username} добавил сайт\n{url} в Черный список'
+    reply += f'\nПричина:\n{why}'
+    chat_id = -1001338704649
+    await bot.send_message(chat_id, reply)
+
+
+@dp.callback_query_handler(
+    lambda call: 'чатЧС' in call.data.split('#')[1])
+async def send_black_list_chat(call):
+    username = call.data.split('#')[0]
+    url = call.data.split('#')[2]
+    why = call.data.split('#')[3]
+    reply = f'Пользователь {username} добавил чат\n{url} в Черный список'
+    reply += f'\nПричина:\n{why}'
+    chat_id = -1001338704649
+    await bot.send_message(chat_id, reply)
+
+
 @dp.callback_query_handler(lambda call: True, state='*')
 async def process_callback_keyboard(call: types.CallbackQuery,
                                     callback_data=None,
@@ -564,14 +588,21 @@ async def process_description_url_bl(message: types.Message,
     """
     async with state.proxy() as ur_link:
         ur_link['description'] = message.text
-    reply = '' + ur_link['url'] + '\nПричина:\n' + ur_link['description']
-    reply = (f'Пользователь @{message.from_user.username} '
+    reply = ur_link['url'] + '\nПричина:\n' + ur_link['description']
+    reply = (f'@{message.from_user.username}\n'
              'хочет добавить сайт в ЧС:\n' + reply)
     admin_ids = db.admin_ids()
     for admin_id in admin_ids:
+        keyboard = types.inline_keyboard.InlineKeyboardMarkup(
+            resize_button=True)
+        data = reply.split('\n')
+        data = data[0] + '#сайтЧС#' + data[2] + '#' + data[4]
+        keyboard.add(types.inline_keyboard.InlineKeyboardButton(
+            text='Добавить в ЧС', callback_data=data))
         await bot.send_message(
             chat_id=admin_id,
             text=reply,
+            reply_markup=keyboard,
             disable_web_page_preview=False)
     await state.finish()
     await message.answer('Администратор рассмотрит ваше предложение')
@@ -626,14 +657,22 @@ async def process_description_chat_bl(message: types.Message,
     """
     async with state.proxy() as ur_link:
         ur_link['description'] = message.text
-    reply = '' + ur_link['url'] + '\nПричина:\n' + ur_link['description']
-    reply = (f'Пользователь @{message.from_user.username} '
+    reply = ur_link['url'] + '\nПричина:\n' + ur_link['description']
+    reply = (f'@{message.from_user.username}\n'
              'хочет добавить чат в ЧС:\n' + reply)
     admin_ids = db.admin_ids()
     for admin_id in admin_ids:
+        keyboard = types.inline_keyboard.InlineKeyboardMarkup(
+            resize_button=True)
+        data = reply.split('\n')
+        data = data[0] + '#чатЧС#' + data[2] + '#' + data[4]
+
+        keyboard.add(types.inline_keyboard.InlineKeyboardButton(
+            text='Добавить в ЧС', callback_data=data))
         await bot.send_message(
             chat_id=admin_id,
             text=reply,
+            reply_markup=keyboard,
             disable_web_page_preview=False)
     await state.finish()
     await message.answer('Администратор рассмотрит ваше предложение')
