@@ -121,6 +121,7 @@ async def send_black_list_url(call):
     reply = f'Пользователь {username} добавил сайт\n{url} в Черный список'
     reply += f'\nПричина:\n{why}'
     chat_id = -1001338704649
+    db.set_black_list_url(url)
     await bot.send_message(chat_id, reply)
 
 
@@ -133,6 +134,7 @@ async def send_black_list_chat(call):
     reply = f'Пользователь {username} добавил чат\n{url} в Черный список'
     reply += f'\nПричина:\n{why}'
     chat_id = -1001338704649
+    db.set_black_list_chat(url)
     await bot.send_message(chat_id, reply)
 
 
