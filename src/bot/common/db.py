@@ -392,3 +392,25 @@ def get_category_title(value):
     cursor.execute(query, connection)
     title = cursor.fetchall()
     return title[0][0]
+
+
+def set_black_list_url(url):
+    query = """
+    UPDATE urls
+    SET black_list=TRUE
+    WHERE url='{}'
+    """.format(url)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
+
+
+def set_black_list_chat(url):
+    query = """
+    UPDATE chats
+    SET black_list=TRUE
+    WHERE url='{}'
+    """.format(url)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute(query, connection)
